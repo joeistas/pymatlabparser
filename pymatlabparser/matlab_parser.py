@@ -171,62 +171,67 @@ class MatlabParser(sly.Parser):
     def args(self, p):
         return ('args', (p[0],))
 
-    # -------------- dealing with matrx/cell array expression syntax ----------------
-    @_('LCURL matrx_rows RCURL')                    # e.g. {3 5 a 2^3; 3 5 a 2^3;} (no semicolon in the last row)
+    # -------------- dealing with matrix/cell array expression syntax ----------------
+    @_('LCURL matrix_rows RCURL')                    # e.g. {3 5 a 2^3; 3 5 a 2^3;} (no semicolon in the last row)
     def expr(self, p):
         return ('cell_array', (p[1],))
 
-    @_('LCURL matrx_elements RCURL')                # e.g. {3 5 a 2^3} (no semicolon in the last row)
+    @_('LCURL matrix_elements RCURL')                # e.g. {3 5 a 2^3} (no semicolon in the last row)
     def expr(self, p):
         return ('cell_array', (p[1],))
 
     # the following permits the last row to not end with a semicolon
-    @_('LCURL matrx_rows matrx_elements RCURL')     # e.g. {3 5 a 2^3; 3 5 a 2^3} (no semicolon in the last row)
+    @_('LCURL matrix_rows matrix_elements RCURL')     # e.g. {3 5 a 2^3; 3 5 a 2^3} (no semicolon in the last row)
     def expr(self, p):
-        existing_matrx_rows = p[1][1]
-        new_matrx_row = (p[2],)
-        return ('cell_array', (('matrix rows',
-                                existing_matrx_rows + new_matrx_row  # concatenating the two tuples
+        existing_matrix_rows = p[1][1]
+        new_matrix_row = (p[2],)
+        return ('cell_array', (('matrix_rows',
+                                existing_matrix_rows + new_matrix_row  # concatenating the two tuples
                                 ),)
                 )
 
-    @_('LSQR matrx_rows RSQR')                      # e.g. [3 5 a 2^3; 3 5 a 2^3;]
+    @_('LSQR RSQR')                      # e.g. []
     def expr(self, p):
-        return ('matrx', (p[1],))
+        return ('matrix', ((None,),))
 
-    @_('LSQR matrx_elements RSQR')                  # e.g. [3 5 a 2^3] (no semicolon in the last row)
+    @_('LSQR matrix_rows RSQR')                      # e.g. [3 5 a 2^3; 3 5 a 2^3;]
     def expr(self, p):
-        return ('matrx', (p[1],))
+        return ('matrix', (p[1],))
+
+    @_('LSQR matrix_elements RSQR')                  # e.g. [3 5 a 2^3] (no semicolon in the last row)
+    def expr(self, p):
+        return ('matrix', (p[1],))
 
     # the following permits the last row to not end with a semicolon
-    @_('LSQR matrx_rows matrx_elements RSQR')       # e.g. [3 5 a 2^3; 3 5 a 2^3] (no semicolon in the last row)
+    @_('LSQR matrix_rows matrix_elements RSQR')       # e.g. [3 5 a 2^3; 3 5 a 2^3] (no semicolon in the last row)
     def expr(self, p):
-        existing_matrx_rows = p[1][1]
-        new_matrx_row = (p[2],)
-        return ('matrx', (('matrix rows',
-                           existing_matrx_rows + new_matrx_row  # concatenating the two tuples
+        existing_matrix_rows = p[1][1]
+        new_matrix_row = (p[2],)
+        return ('matrix', (('matrix_rows',
+                           existing_matrix_rows + new_matrix_row  # concatenating the two tuples
                            ),)
                 )
 
-    @_('matrx_rows matrx_elements SEMICOLON')       # e.g. 3 5 a 2^3; 3 5 a 2^3;
-    def matrx_rows(self, p):
-        return ('matrx_rows', p[0][1] + (p[1],))    # elevating the matrx_elements to a new matrx_rows using tuple
+    @_('matrix_rows matrix_elements SEMICOLON')       # e.g. 3 5 a 2^3; 3 5 a 2^3;
+    def matrix_rows(self, p):
+        return ('matrix_rows', p[0][1] + (p[1],))    # elevating the matrix_elements to a new matrix_rows using tuple
 
-    @_('matrx_elements SEMICOLON')                  # e.g. 3 5 a 2^3;
-    def matrx_rows(self, p):
-        return ('matrx_rows', (p[0],))
+    @_('matrix_elements SEMICOLON')                  # e.g. 3 5 a 2^3;
+    def matrix_rows(self, p):
+        return ('matrix_rows', (p[0],))
 
-    @_('matrx_elements matrx_elements')             # e.g. 3 5 a 2^3
-    def matrx_elements(self, p):
-        return ('matrx_elements', p[0][1] + p[1][1])
+    @_('matrix_elements matrix_elements')             # e.g. 3 5 a 2^3
+    def matrix_elements(self, p):
+        return ('matrix_elements', p[0][1] + p[1][1])
 
-    @_('matrx_elements COMMA matrx_elements')       # e.g. 3, 5, a, 2^3  (COMMA makes no difference than space)
-    def matrx_elements(self, p):
-        return ('matrx_elements', p[0][1] + p[2][1])
+    @_('matrix_elements COMMA matrix_elements')       # e.g. 3, 5, a, 2^3  (COMMA makes no difference than space)
+    def matrix_elements(self, p):
+        return ('matrix_elements', p[0][1] + p[2][1])
 
-    @_('expr')                                      # any expression could be elevated to matrx_elements
-    def matrx_elements(self, p):
-        return ('matrx_elements', (p[0],))
+    @_('expr')                                      # any expression could be elevated to matrix_elements
+    def matrix_elements(self, p):
+        return ('matrix_elements', (p[0],))
+        
 
 
     # -------------- dealing with syntax-related expressions ------------
@@ -259,9 +264,16 @@ class MatlabParser(sly.Parser):
     def expr(self, p):
         return ('unary %s oper'%p[0], (p[1],))
 
-    @_('expr COLON expr')                           # e.g. 5 : 25
+    @_('COLON')                                    # e.g. ':' -- Currently unable to get this to parse
     def expr(self, p):
-        return ('range ', (p[0],                    # expression before the colon
+        return ('range', (('1',),             # expression before the colon
+                           ('1',),                    # step
+                           ('end',)))                  # expression after the colon
+
+    @_('expr COLON expr', 'expr COLON END')                           # e.g. 5 : 25
+    def expr(self, p):
+        return ('range', (p[0],                    # expression before the colon
+                          ('1',),                   # step
                            p[2]))                   # expression after the colon
 
     @_('expr OROR expr',    'expr ANDAND expr',     'expr OR expr',     'expr AND expr',
