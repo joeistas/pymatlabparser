@@ -146,6 +146,11 @@ class MatlabParser(sly.Parser):
         return ('command', (p[0],))
 
     # -------------- dealing with function call/array indexing syntax --------------
+    @_('expr LPAREN RPAREN')                   # e.g. my_function()
+    def expr(self, p):
+        called = ('expr', (p[0],))                  # creates a new node for the called expression
+        return ('func_call/array_idxing', (called, ))  # the called expression   
+
     @_('expr LPAREN args RPAREN')                   # e.g. my_function(pi, 2)
     def expr(self, p):
         called = ('expr', (p[0],))                  # creates a new node for the called expression
